@@ -1,0 +1,30 @@
+# 3ds Max Wavefront OBJ Exporter v0.97b - (c)2007 guruware
+# File Created: 05.01.2018 12:59:19
+
+newmtl MAT_santa
+	Ns 10.0000
+	Ni 1.5000
+	d 1.0000
+	Tr 0.0000
+	Tf 1.0000 1.0000 1.0000 
+	illum 2
+	Ka 0.5882 0.5882 0.5882
+	Kd 1.0000 1.0000 1.0000
+	Ks 0.0000 0.0000 0.0000
+	Ke 0.0000 0.0000 0.0000
+	map_Ka F:\WORK_2\2018\2017.11.01_wonderlabs_christmasCard\2D\yann\Office\TX_WIP\EXPORT\OBJ_EXPORT\Scene\JSON\test.fbm\TX_Santa.png
+	map_Kd F:\WORK_2\2018\2017.11.01_wonderlabs_christmasCard\2D\yann\Office\TX_WIP\EXPORT\OBJ_EXPORT\Scene\JSON\test.fbm\TX_Santa.png
+
+newmtl MAT_HTCctrl
+	Ns 0.0000
+	Ni 1.5000
+	d 1.0000
+	Tr 0.0000
+	Tf 1.0000 1.0000 1.0000 
+	illum 2
+	Ka 0.0000 0.0000 0.0000
+	Kd 0.8000 0.8000 0.8000
+	Ks 0.0000 0.0000 0.0000
+	Ke 0.0000 0.0000 0.0000
+	map_Ka F:\WORK_2\2018\2017.11.01_wonderlabs_christmasCard\2D\yann\Office\TX_WIP\EXPORT\OBJ_EXPORT\Scene\JSON\test.fbm\TX_HTC.jpg
+	map_Kd F:\WORK_2\2018\2017.11.01_wonderlabs_christmasCard\2D\yann\Office\TX_WIP\EXPORT\OBJ_EXPORT\Scene\JSON\test.fbm\TX_HTC.jpg
