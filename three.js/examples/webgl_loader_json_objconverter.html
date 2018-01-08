@@ -190,12 +190,12 @@
 
 				var loader = new THREE.JSONLoader();
 				var callbackMale = function ( geometry, materials ) { createScene( geometry, materials, 90, FLOOR, 50, 105 ) };
-				//var callbackFemale = function ( geometry, materials ) { createScene( geometry, materials, -80, FLOOR, 50, 0 ) };
-				var callbackFemale = function ( geometry, materials ) { createScene( geometry, materials, 0, 0, 0, 0 ) };
+				var callbackFemale = function ( geometry, materials ) { createScene( geometry, materials, -80, FLOOR, 50, 0 ) };
+				//var callbackFemale = function ( geometry, materials ) { createScene( geometry, materials, 0, 0, 0, 0 ) };
 
 				loader.load( "obj/male02/Male02_dds.js", callbackMale );
-				//loader.load( "obj/female02/Female02_slim.js", callbackFemale );
-				loader.load( "../WebRoot/models/Santa.js", callbackFemale );
+				loader.load( "obj/female02/Female02_slim.js", callbackFemale );
+				//loader.load( "../WebRoot/models/Santa.js", callbackFemale );
 
 
 				//
