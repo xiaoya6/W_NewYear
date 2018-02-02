@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+
+	<head>
+		<title>three.js webgl - FBX loader</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				font-family: Monospace;
+				background-color: #000;
+				color: #fff;
+				margin: 0px;
+				overflow: hidden;
+			}
+			
+			#info {
+				color: #fff;
+				position: absolute;
+				top: 10px;
+				width: 100%;
+				text-align: center;
+				z-index: 100;
+				display: block;
+			}
+			
+			#info a {
+				color: #046;
+				font-weight: bold;
+			}
+		</style>
+	</head>
+
+	<body>
+		<div id="info">
+			<a href="http://threejs.org" target="_blank" rel="noopener">three.js</a> - FBXLoader<br /> Character and animation from
+			<a href="https://www.mixamo.com/" target="_blank" rel="noopener">Mixamo</a>
+			</br>
+
+			<button onclick="SwitchModel(0)">显示模型1</button>
+			<button onclick="SwitchModel(1)">显示模型2</button>
+			<button onclick="SwitchModel(2)">显示模型3</button>
+
+			</br>
+			<button onclick="ClipAnimation(selectModelID,0)">1</button>
+			<button onclick="ClipAnimation(selectModelID,1)">2</button>
+			<button onclick="ClipAnimation(selectModelID,2)">3</button>
+			<button onclick="ClipAnimation(selectModelID,3)">4 </button>
+
+		</div>
+
+		<script src="js/three.js"></script>
+
+		<script src="js/inflate.min.js"></script>
+		<script src="js/FBXLoader.js"></script>
+
+		<script src="js/OrbitControls.js"></script>
+
+		<script src="js/Detector.js"></script>
+		<script src="js/stats.min.js"></script>
+
+		<script>
+			if(!Detector.webgl) Detector.addGetWebGLMessage();
+
+			var container, stats, controls;
+			var camera, scene, renderer, light;
+
+			//显示中的模型
+			var activeModel;
+			//用来记录模型的下标
+			var index = 0;
+			var clock = new THREE.Clock();
+
+			//显示的模型的下标
+			var selectModelID = -1;
+			//之前被选中的模型的下标
+			var lastModelID = -1;
+			//模型数组
+			var models = new Array();
+			//所有模型的动画数组
+			var mixers = new Array();
+			var abc;
+			//所有模型的动画
+			//var actions = new Array();
+			var action;
+			//是否播放动画
+			var isAction = false;
+			init();
+			animate();
+
+			function init() {
+
+				container = document.createElement('div');
+				document.body.appendChild(container);
+
+				camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 2000);
+				camera.position.set(100, 200, 400);
+
+				controls = new THREE.OrbitControls(camera);
+				controls.target.set(0, 100, 0);
+				controls.update();
+
+				scene = new THREE.Scene();
+				scene.background = new THREE.Color(0xa0a0a0);
+				//scene.fog = new THREE.Fog( 0xa0a0a0, 200, 1000 );
+
+				light = new THREE.HemisphereLight(0xffffff, 0x444444);
+				light.position.set(0, 200, 0);
+				scene.add(light);
+
+				light = new THREE.DirectionalLight(0xffffff);
+				light.position.set(0, 200, 100);
+				light.castShadow = true;
+				light.shadow.camera.top = 180;
+				light.shadow.camera.bottom = -100;
+				light.shadow.camera.left = -120;
+				light.shadow.camera.right = 120;
+				scene.add(light);
+
+				// scene.add( new THREE.CameraHelper( light.shadow.camera ) );
+
+				// ground
+				var mesh = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), new THREE.MeshPhongMaterial({
+					color: 0x999999,
+					depthWrite: false
+				}));
+				mesh.rotation.x = -Math.PI / 2;
+				mesh.receiveShadow = true;
+				scene.add(mesh);
+
+				//添加网格
+				//				var grid = new THREE.GridHelper( 2000, 20, 0x000000, 0x000000 );
+				//				grid.material.opacity = 0.2;
+				//				grid.material.transparent = true;
+				//				scene.add( grid );
+
+				renderer = new THREE.WebGLRenderer();
+				renderer.setPixelRatio(window.devicePixelRatio);
+				renderer.setSize(window.innerWidth, window.innerHeight);
+				renderer.shadowMap.enabled = true;
+				container.appendChild(renderer.domElement);
+
+				window.addEventListener('resize', onWindowResize, false);
+
+				// stats
+				stats = new Stats();
+				container.appendChild(stats.dom);
+
+				// model
+				var loader = new THREE.FBXLoader();
+				//加载第一个模型
+				loader.load('CUBE/cube.fbx', FBXModel);
+				loader.load('maxiu/123.fbx', FBXModel);
+				loader.load('maxiu/123.fbx', FBXModel);
+
+			}
+
+			//加载FBXModel
+			function FBXModel(object) {
+				models[index] = object;
+				models[index].visible = false;
+				scene.add(object);
+				AddAnimation(object, index);
+				index++;
+			}
+
+			//添加动画数据,model:生成的模型 animationNum:动画列表的下标
+			function AddAnimation(model, animationNum) {
+				//读取模型中的动画
+				model.mixer = new THREE.AnimationMixer(model);
+				//定义混合动画数组
+				mixers[animationNum] = new Array();
+				//将混合动画从尾部添加动画
+				mixers[animationNum].push(model.mixer);
+				//定义动画
+				//action= model.mixer.clipAction(model.animations[0]);
+//
+				model.traverse(function(child) {
+
+					if(child.isMesh) {
+
+						child.castShadow = true;
+						child.receiveShadow = true;
+
+					}
+
+				});
+			}
+
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize(window.innerWidth, window.innerHeight);
+
+			}
+
+			//替换模型
+			function SwitchModel(modelNum) {
+				//如果有模型显示中，先隐藏当前的模型		
+				if(activeModel != null) {
+					activeModel.visible = false;
+				}
+				//显示当前选中的模型
+				models[modelNum].visible = true;
+				//显示模型为当先选中的模型
+				activeModel = models[modelNum];
+				//选中模型的下标为当前模型的下标
+				selectModelID = modelNum;
+				
+				//console.log("modelNum="+modelNum);
+			}
+
+			//切换选中模型的动画
+			function ClipAnimation(modelID,i) {
+				if(action != null){
+					action.stop();
+				}
+				//停止原先动画
+				//				if(actions[modelID].play()){
+				//					console.log("在做动画");
+				//				}
+				//				if(action.play()) {
+				//					console.log("在做动画");
+				//				}
+				//				停止先前的动作
+				//				actions[modelID].stop();
+				//				//选择需要切换动画的编号
+				action = models[modelID].mixer.clipAction(models[modelID].animations[i]);
+				//播放选择的动画
+				action.play();
+				isAction = true;
+			}
+			//
+
+			function animate() {
+
+				requestAnimationFrame(animate);
+
+				if(action != null) {
+					if(mixers[selectModelID].length > 0) {
+						for(var i = 0; i < mixers[selectModelID].length; i++) {
+							models[selectModelID].mixer.update(clock.getDelta());
+						}
+
+					}
+				}
+
+				renderer.render(scene, camera);
+
+				stats.update();
+
+			}
+		</script>
+
+	</body>
+
+</html>
