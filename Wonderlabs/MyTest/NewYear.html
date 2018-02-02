@@ -28,6 +28,21 @@
 				color: #046;
 				font-weight: bold;
 			}
+			
+			button{
+				width: 126px;
+				height: 56px;
+			}
+			
+			#model1{
+				background-image: url(Image/model1.png);
+			}
+			#animationButton{
+				background-image: url(Image/bainian.png);
+			}
+			/*button{
+				
+			}*/
 		</style>
 	</head>
 
@@ -37,15 +52,15 @@
 			<!--<a href="https://www.mixamo.com/" target="_blank" rel="noopener">Mixamo</a>-->
 			</br>
 
-			<button onclick="SwitchModel(0)">显示模型1</button>
-			<button onclick="SwitchModel(1)">显示模型2</button>
-			<button onclick="SwitchModel(2)">显示模型3</button>
+			<button id = "model1", onclick="SwitchModel(0)"></button>
+			<button id = "model1", onclick="SwitchModel(1)"></button>
+			<button id = "model1", onclick="SwitchModel(2)"></button>
 
 			</br>
-			<button onclick="ClipAnimation(selectModelID,0)">动作1</button>
-			<button onclick="ClipAnimation(selectModelID,1)">动作2</button>
-			<button onclick="ClipAnimation(selectModelID,2)">动作3</button>
-			<button onclick="ClipAnimation(selectModelID,3)">动作4</button>
+			<button id = "animationButton",onclick="ClipAnimation(selectModelID,0)"></button>
+			<button id = "animationButton",onclick="ClipAnimation(selectModelID,1)"></button>
+			<button id = "animationButton",onclick="ClipAnimation(selectModelID,2)"></button>
+			<button id = "animationButton",onclick="ClipAnimation(selectModelID,3)"></button>
 
 		</div>
 
@@ -69,6 +84,7 @@
 			var activeModel;
 			//用来记录模型的下标
 			var index = 0;
+
 			var clock = new THREE.Clock();
 
 			//显示的模型的下标
@@ -79,14 +95,21 @@
 			var models = new Array();
 			//所有模型的动画数组
 			var mixers = new Array();
-			var abc;
-			//所有模型的动画
-			//var actions = new Array();
+
 			var action;
 			//是否播放动画
 			var isAction = false;
+			var loader = new THREE.FBXLoader();
+
 			init();
 			animate();
+
+			//创建人类对象
+//			function person(model, ID, animation) {
+//				this.model = model;
+//				this.ID = ID;
+//				this.animation = animation;
+//			}
 
 			function init() {
 
@@ -147,17 +170,37 @@
 				container.appendChild(stats.dom);
 
 				// model
-				var loader = new THREE.FBXLoader();
 				//加载第一个模型
-				loader.load('CUBE/cube.fbx', FBXModel);
-				loader.load('maxiu/123.fbx', FBXModel);
-				loader.load('maxiu/123.fbx', FBXModel);
+				Load('CUBE/cube.fbx');
+				Load('maxiu/123.fbx');
+				Load('maxiu/MM.fbx');
+
+				//				loader.load('CUBE/cube.fbx', FBXModel);
+				//				loader.load('maxiu/123.fbx', FBXModel);
+				//				loader.load('maxiu/MM.fbx', FBXModel);
 
 			}
 
+			//FBX加载
+			function Load(path) {
+				loader.load(path, FBXModel);
+			}
+
+//			//加载场景模型
+//			function LoadSceneModel(path){
+//				loader.load(path, FBXSceneModel);
+//			}
+//			
+//			//加载场景模型
+//			function FBXSceneModel(object){
+//				scene.add(object);
+//			}
+//			
 			//加载FBXModel
 			function FBXModel(object) {
+				//index表示加载的模型
 				models[index] = object;
+				//隐藏加载的模型
 				models[index].visible = false;
 				scene.add(object);
 				AddAnimation(object, index);
@@ -174,14 +217,13 @@
 				mixers[animationNum].push(model.mixer);
 				//定义动画
 				//action= model.mixer.clipAction(model.animations[0]);
-//
+				//
 				model.traverse(function(child) {
 
 					if(child.isMesh) {
 
 						child.castShadow = true;
 						child.receiveShadow = true;
-
 					}
 
 				});
@@ -208,36 +250,27 @@
 				activeModel = models[modelNum];
 				//选中模型的下标为当前模型的下标
 				selectModelID = modelNum;
-				
 				//console.log("modelNum="+modelNum);
 			}
 
 			//切换选中模型的动画
-			function ClipAnimation(modelID,i) {
-				if(action != null){
+			function ClipAnimation(modelID, i) {
+				//假设已经有动画在播放，停止该动画
+				if(action != null) {
 					action.stop();
 				}
-				//停止原先动画
-				//				if(actions[modelID].play()){
-				//					console.log("在做动画");
-				//				}
-				//				if(action.play()) {
-				//					console.log("在做动画");
-				//				}
-				//				停止先前的动作
-				//				actions[modelID].stop();
-				//				//选择需要切换动画的编号
+				//选择当前需要播放的动画
 				action = models[modelID].mixer.clipAction(models[modelID].animations[i]);
 				//播放选择的动画
 				action.play();
+				//正在播放动画
 				isAction = true;
 			}
-			//
 
 			function animate() {
 
 				requestAnimationFrame(animate);
-
+				//当有动画需要被播放，就逐帧播放该动画
 				if(action != null) {
 					if(mixers[selectModelID].length > 0) {
 						for(var i = 0; i < mixers[selectModelID].length; i++) {
@@ -246,7 +279,6 @@
 
 					}
 				}
-
 				renderer.render(scene, camera);
 
 				stats.update();
