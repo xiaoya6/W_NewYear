@@ -166,7 +166,6 @@
 
 				scene = new THREE.Scene();
 				scene.background = new THREE.Color(0xa0a0a0);
-				//scene.fog = new THREE.Fog( 0xa0a0a0, 200, 1000 );
 				light = new THREE.HemisphereLight(0xffffff, 0x444444);
 				light.position.set(0, 200, 0);
 				scene.add(light);
@@ -183,11 +182,11 @@
 				
 			// skybox
 			//setSkybox();
-			var geometry = new THREE.SphereBufferGeometry(1000, 1000, 1000);
+			var geometry = new THREE.SphereBufferGeometry(500, 500, 500);
 				geometry.scale(-1, 1, 1);
 				
 				var material = new THREE.MeshBasicMaterial({
-					map: new THREE.TextureLoader().load('Image/skybox.png')
+					map: new THREE.TextureLoader().load('Image/star.jpg')
 					//color: 0xff0000
 				});
 				mesh = new THREE.Mesh(geometry, material);
@@ -234,7 +233,7 @@
 
 				var cubeTextureLoader = new THREE.CubeTextureLoader();
 				//cubeTextureLoader.setPath( 'Image/skyboxsun25deg/' );
-				cubeTextureLoader.setPath( 'Image/skybox/' );
+				cubeTextureLoader.setPath( 'Image/new/' );
 
 
 				cubeMap = cubeTextureLoader.load( [
