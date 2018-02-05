@@ -8,7 +8,9 @@
 		<style>
 			body {
 				font-family: Monospace;
-				background-color: #000;
+				/*background-color: #000;*/
+				background-color: red;
+
 				color: #fff;
 				margin: 0px;
 				overflow: hidden;
@@ -19,6 +21,7 @@
 				position: absolute;
 				top: 10px;
 				width: 100%;
+				height: 100%;
 				text-align: center;
 				z-index: 100;
 				display: block;
@@ -29,16 +32,49 @@
 				font-weight: bold;
 			}
 			
-			button{
-				width: 126px;
-				height: 56px;
+			#modelLeft{
+				width: 128px;
+				height: 128px;
+				background-image: url(Image/arrow/left.png);
+				background-color:transparent;
+				border: transparent;				
+				float:right;
+				margin-right: 10%;
+				margin-top: 50%;
 			}
 			
-			#model1{
-				background-image: url(Image/model1.png);
+			#modelRight{
+				width: 128px;
+				height: 128px;
+				background-image: url(Image/arrow/right.png);
+				background-color:transparent;
+				border: transparent;	
+				margin-left: 5%;
+				margin-top: 50%;
 			}
-			#animationButton{
+			
+			#animationButton1{
+				width: 128px;
+				height: 64px;
 				background-image: url(Image/bainian.png);
+			}
+			
+			#left{
+				width: 128px;
+				height: 128px;
+				background-image: url(Image/arrow/left.png);
+				background-color:transparent;
+				border: transparent;	
+				/*background-position: 10% 50%;*/
+			}
+			
+			#right{
+				width: 128px;
+				height: 128px;
+				background-image: url(Image/arrow/right.png);
+				background-color:transparent;
+				/*border: transparent;*/				
+				/*background-position: 10% 50%;*/
 			}
 			/*button{
 				
@@ -50,17 +86,15 @@
 		<div id="info">
 			<!--<a href="http://threejs.org" target="_blank" rel="noopener">three.js</a> - FBXLoader<br /> Character and animation from-->
 			<!--<a href="https://www.mixamo.com/" target="_blank" rel="noopener">Mixamo</a>-->
+			</br>		
+			<button id = "modelLeft", onclick="SwitchModel(0)"></button>
+			<button id = "modelRight", onclick="SwitchModel(1)"></button>
+			
 			</br>
-
-			<button id = "model1", onclick="SwitchModel(0)"></button>
-			<button id = "model1", onclick="SwitchModel(1)"></button>
-			<button id = "model1", onclick="SwitchModel(2)"></button>
-
-			</br>
-			<button id = "animationButton",onclick="ClipAnimation(selectModelID,0)"></button>
-			<button id = "animationButton",onclick="ClipAnimation(selectModelID,1)"></button>
-			<button id = "animationButton",onclick="ClipAnimation(selectModelID,2)"></button>
-			<button id = "animationButton",onclick="ClipAnimation(selectModelID,3)"></button>
+			<button id = "animationButton1", onclick="ClipAnimation(selectModelID,0)"></button>
+			<button id = "animationButton1", onclick="ClipAnimation(selectModelID,1)"></button>
+			<button id = "animationButton1", onclick="ClipAnimation(selectModelID,2)"></button>
+			<button id = "animationButton1", onclick="ClipAnimation(selectModelID,3)"></button>	
 
 		</div>
 
@@ -100,6 +134,13 @@
 			//是否播放动画
 			var isAction = false;
 			var loader = new THREE.FBXLoader();
+			
+			var parameters = {
+				oceanSide: 500,
+				size: 1.0,
+				distortionScale: 3.7,
+				alpha: 1.0
+			};
 
 			init();
 			animate();
@@ -126,7 +167,6 @@
 				scene = new THREE.Scene();
 				scene.background = new THREE.Color(0xa0a0a0);
 				//scene.fog = new THREE.Fog( 0xa0a0a0, 200, 1000 );
-
 				light = new THREE.HemisphereLight(0xffffff, 0x444444);
 				light.position.set(0, 200, 0);
 				scene.add(light);
@@ -140,16 +180,28 @@
 				light.shadow.camera.right = 120;
 				scene.add(light);
 
-				// scene.add( new THREE.CameraHelper( light.shadow.camera ) );
-
-				// ground
-				var mesh = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), new THREE.MeshPhongMaterial({
-					color: 0x999999,
-					depthWrite: false
-				}));
-				mesh.rotation.x = -Math.PI / 2;
-				mesh.receiveShadow = true;
+				
+			// skybox
+			//setSkybox();
+			var geometry = new THREE.SphereBufferGeometry(1000, 1000, 1000);
+				geometry.scale(-1, 1, 1);
+				
+				var material = new THREE.MeshBasicMaterial({
+					map: new THREE.TextureLoader().load('Image/skybox.png')
+					//color: 0xff0000
+				});
+				mesh = new THREE.Mesh(geometry, material);
+				mesh.name = "skybox";
 				scene.add(mesh);
+			
+				// ground
+//				var mesh = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), new THREE.MeshPhongMaterial({
+//					color: 0x999999,
+//					depthWrite: false
+//				}));
+//				mesh.rotation.x = -Math.PI / 2;
+//				mesh.receiveShadow = true;
+//				scene.add(mesh);
 
 				//添加网格
 				//				var grid = new THREE.GridHelper( 2000, 20, 0x000000, 0x000000 );
@@ -166,18 +218,49 @@
 				window.addEventListener('resize', onWindowResize, false);
 
 				// stats
-				stats = new Stats();
-				container.appendChild(stats.dom);
+				//性能插件stats实现性能监听实例详解
+				//stats = new Stats();
+				//container.appendChild(stats.dom);
 
 				// model
 				//加载第一个模型
 				Load('CUBE/cube.fbx');
 				Load('maxiu/123.fbx');
 				Load('maxiu/MM.fbx');
+			}
 
-				//				loader.load('CUBE/cube.fbx', FBXModel);
-				//				loader.load('maxiu/123.fbx', FBXModel);
-				//				loader.load('maxiu/MM.fbx', FBXModel);
+			//天空球
+			function setSkybox() {
+
+				var cubeTextureLoader = new THREE.CubeTextureLoader();
+				//cubeTextureLoader.setPath( 'Image/skyboxsun25deg/' );
+				cubeTextureLoader.setPath( 'Image/skybox/' );
+
+
+				cubeMap = cubeTextureLoader.load( [
+					'px.jpg', 'nx.jpg',
+					'py.jpg', 'ny.jpg',
+					'pz.jpg', 'nz.jpg',
+				] );
+
+				var cubeShader = THREE.ShaderLib[ 'cube' ];
+				cubeShader.uniforms[ 'tCube' ].value = cubeMap;
+
+				var skyBoxMaterial = new THREE.ShaderMaterial( {
+					fragmentShader: cubeShader.fragmentShader,
+					vertexShader: cubeShader.vertexShader,
+					uniforms: cubeShader.uniforms,
+					side: THREE.BackSide
+				} );
+
+				var skyBoxGeometry = new THREE.BoxBufferGeometry(
+					parameters.oceanSide * 5 + 100,
+					parameters.oceanSide * 5 + 100,
+					parameters.oceanSide * 5 + 100 );
+
+				var skyBox = new THREE.Mesh( skyBoxGeometry, skyBoxMaterial );
+
+				scene.add( skyBox );
 
 			}
 
@@ -186,16 +269,16 @@
 				loader.load(path, FBXModel);
 			}
 
-//			//加载场景模型
-//			function LoadSceneModel(path){
-//				loader.load(path, FBXSceneModel);
-//			}
-//			
-//			//加载场景模型
-//			function FBXSceneModel(object){
-//				scene.add(object);
-//			}
-//			
+			//加载场景模型
+			function LoadSceneModel(path){
+				loader.load(path, FBXSceneModel);
+			}
+			
+			//加载场景模型
+			function FBXSceneModel(object){
+				scene.add(object);
+			}
+			
 			//加载FBXModel
 			function FBXModel(object) {
 				//index表示加载的模型
@@ -233,9 +316,8 @@
 
 				camera.aspect = window.innerWidth / window.innerHeight;
 				camera.updateProjectionMatrix();
-
+				
 				renderer.setSize(window.innerWidth, window.innerHeight);
-
 			}
 
 			//替换模型
@@ -281,7 +363,7 @@
 				}
 				renderer.render(scene, camera);
 
-				stats.update();
+				//stats.update();
 
 			}
 		</script>
