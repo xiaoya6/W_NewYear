@@ -424,7 +424,7 @@ THREE.OrbitControls = function ( object, domElement ) {
 
 		//console.log( 'handleMouseDownDolly' );
 
-		dollyStart.set( event.clientX, event.clientY );
+		//dollyStart.set( event.clientX, event.clientY );
 
 	}
 
@@ -676,11 +676,11 @@ THREE.OrbitControls = function ( object, domElement ) {
 
 			case scope.mouseButtons.ZOOM:
 
-				if ( scope.enableZoom === false ) return;
-
-				handleMouseDownDolly( event );
-
-				state = STATE.DOLLY;
+//				if ( scope.enableZoom === false ) return;
+//
+//				handleMouseDownDolly( event );
+//
+//				state = STATE.DOLLY;
 
 				break;
 
@@ -766,8 +766,10 @@ THREE.OrbitControls = function ( object, domElement ) {
 		event.stopPropagation();
 
 		scope.dispatchEvent( startEvent );
-
-		handleMouseWheel( event );
+		
+		//20180206警用滚轮缩放
+		//TODO
+		//handleMouseWheel( event );
 
 		scope.dispatchEvent( endEvent );
 
@@ -854,7 +856,7 @@ THREE.OrbitControls = function ( object, domElement ) {
 				if ( scope.enableZoom === false ) return;
 				if ( state !== STATE.TOUCH_DOLLY ) return; // is this needed?...
 
-				handleTouchMoveDolly( event );
+				//handleTouchMoveDolly( event );
 
 				break;
 

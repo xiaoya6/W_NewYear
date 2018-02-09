@@ -2,117 +2,88 @@
 <html lang="en">
 
 	<head>
+		<link rel="dns-prefetch" href="//www.wonderlabs.top">
 		<title>Happy New Year</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<script src="https://code.createjs.com/createjs-2015.11.26.min.js"></script>
+		<script src="https://code.createjs.com/1.0.0/soundjs.min.js"></script>
+		<script src="http://res.wx.qq.com/open/js/jweixin-1.0.0.js"></script>
+		<script src="http://cdnjs.gtimg.com/cdnjs/libs/wxmoment/0.0.2-rc1/wxmoment.min.js"></script>
+		<script src="js/three.js"></script>
+		<script src="js/inflate.min.js"></script>
+		<script src="js/FBXLoader.js"></script>
+
+		<script src="js/OrbitControls.js"></script>
+		<script src="js/Detector.js"></script>
+
 		<style>
 			body {
 				font-family: Monospace;
 				/*background-color: #000;*/
 				background-color: red;
-
 				color: #fff;
 				margin: 0px;
 				overflow: hidden;
 			}
 			
-			#info {
-				color: #fff;
-				position: absolute;
-				top: 10px;
+			#show {
+				font-size: x-large;
+				background: transparent;
 				width: 100%;
-				height: 100%;
 				text-align: center;
-				z-index: 100;
-				display: block;
+				padding-top: 10%;
 			}
 			
-			#info a {
-				color: #046;
-				font-weight: bold;
+			#loading {
+				width: 100%;
+				position: absolute;
+				margin-top: 100%;
 			}
-			
-			#modelLeft{
-				width: 128px;
-				height: 128px;
-				background-image: url(Image/arrow/left.png);
-				background-color:transparent;
-				border: transparent;				
-				float:right;
-				margin-right: 10%;
-				margin-top: 50%;
-			}
-			
-			#modelRight{
-				width: 128px;
-				height: 128px;
-				background-image: url(Image/arrow/right.png);
-				background-color:transparent;
-				border: transparent;	
-				margin-left: 5%;
-				margin-top: 50%;
-			}
-			
-			#animationButton1{
-				width: 128px;
-				height: 64px;
-				background-image: url(Image/bainian.png);
-			}
-			
-			#left{
-				width: 128px;
-				height: 128px;
-				background-image: url(Image/arrow/left.png);
-				background-color:transparent;
-				border: transparent;	
-				/*background-position: 10% 50%;*/
-			}
-			
-			#right{
-				width: 128px;
-				height: 128px;
-				background-image: url(Image/arrow/right.png);
-				background-color:transparent;
-				/*border: transparent;*/				
-				/*background-position: 10% 50%;*/
-			}
-			/*button{
-				
-			}*/
 		</style>
 	</head>
 
 	<body>
-		<div id="info">
-			<!--<a href="http://threejs.org" target="_blank" rel="noopener">three.js</a> - FBXLoader<br /> Character and animation from-->
-			<!--<a href="https://www.mixamo.com/" target="_blank" rel="noopener">Mixamo</a>-->
-			</br>		
-			<button id = "modelLeft", onclick="SwitchModel(0)"></button>
-			<button id = "modelRight", onclick="SwitchModel(1)"></button>
-			
-			</br>
-			<button id = "animationButton1", onclick="ClipAnimation(selectModelID,0)"></button>
-			<button id = "animationButton1", onclick="ClipAnimation(selectModelID,1)"></button>
-			<button id = "animationButton1", onclick="ClipAnimation(selectModelID,2)"></button>
-			<button id = "animationButton1", onclick="ClipAnimation(selectModelID,3)"></button>	
-
+		<div id="loading">
+			<div id="show">0%</div>
 		</div>
-
-		<script src="js/three.js"></script>
-
-		<script src="js/inflate.min.js"></script>
-		<script src="js/FBXLoader.js"></script>
-
-		<script src="js/OrbitControls.js"></script>
-
-		<script src="js/Detector.js"></script>
-		<script src="js/stats.min.js"></script>
+		<script>
+			$(document).ready(function() {
+				//=========旋屏提示=========
+				var ot = new WxMoment.OrientationTip();
+			})
+		</script>
 
 		<script>
 			if(!Detector.webgl) Detector.addGetWebGLMessage();
 
 			var container, stats, controls;
 			var camera, scene, renderer, light;
+			var width = window.innerWidth;
+			var height = window.innerHeight;
+			//贴图
+			var spriteBG;
+			//左右两个按钮
+			var leftSprite, rightSprite;
+			var soundOffSprite, soundOnSprite;
+			//加载页面
+			var loadBGSprite;
+
+			// create an AudioListener and add it to the camera
+			var listener = new THREE.AudioListener();
+			// create a global audio source
+			var sound = new THREE.Audio(listener);
+			// load a sound and set it as the Audio object's buffer
+			var audioLoader = new THREE.AudioLoader();
+
+			var mouse = new THREE.Vector2();
+			var raycaster = new THREE.Raycaster();
+
+			var windowHalfX = window.innerWidth / 2;
+			var windowHalfY = window.innerHeight / 2;
+			var callback = ShowCurrentModel;
+
+			var soundinstance;
 
 			//显示中的模型
 			var activeModel;
@@ -122,7 +93,7 @@
 			var clock = new THREE.Clock();
 
 			//显示的模型的下标
-			var selectModelID = -1;
+			var selectModelID = 0;
 			//之前被选中的模型的下标
 			var lastModelID = -1;
 			//模型数组
@@ -131,26 +102,41 @@
 			var mixers = new Array();
 
 			var action;
+
 			//是否播放动画
 			var isAction = false;
-			var loader = new THREE.FBXLoader();
-			
-			var parameters = {
-				oceanSide: 500,
-				size: 1.0,
-				distortionScale: 3.7,
-				alpha: 1.0
-			};
+			var manager = new THREE.LoadingManager();
 
+			var loader = new THREE.FBXLoader(manager);
+
+			var moveleft, moveright = false;
+			//可以切换模型
+			var canSwitch = true;
+
+			//模型完成数量
+			var loadModelCount = 0;
+			//2D场景，摄像机
+			var sceneHUD, cameraHUD;
+			//单个模型加载进度
+			var loadProgress = 0;
+			var totalLoad = 30;
+			var startProgress = 0;
+			//错误信息
+			var onError;
+			var hudBitmap;
+			//加载进度
+			var loadProgress;
+			var loadPathList = [
+				"Models/Model_bianpao.fbx",
+				"Models/Model_bainian.fbx",
+				"Models/Model2.fbx",
+				"Models/1810209Fu.fbx",
+				"Models/Model5.fbx"
+			];
+			var totalLoad;
+			var isLoading = true;
 			init();
 			animate();
-
-			//创建人类对象
-//			function person(model, ID, animation) {
-//				this.model = model;
-//				this.ID = ID;
-//				this.animation = animation;
-//			}
 
 			function init() {
 
@@ -158,18 +144,19 @@
 				document.body.appendChild(container);
 
 				camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 2000);
-				camera.position.set(100, 200, 400);
+				camera.position.set(0, 100, 250);
+				camera.add(listener);
 
-				controls = new THREE.OrbitControls(camera);
-				controls.target.set(0, 100, 0);
-				controls.update();
+				startCameraRotation = camera.rotation;
 
 				scene = new THREE.Scene();
 				scene.background = new THREE.Color(0xa0a0a0);
 				light = new THREE.HemisphereLight(0xffffff, 0x444444);
 				light.position.set(0, 200, 0);
+				scene.add(camera);
 				scene.add(light);
 
+				//添加环境光
 				light = new THREE.DirectionalLight(0xffffff);
 				light.position.set(0, 200, 100);
 				light.castShadow = true;
@@ -179,111 +166,226 @@
 				light.shadow.camera.right = 120;
 				scene.add(light);
 
-				
-			// skybox
-			//setSkybox();
-			var geometry = new THREE.SphereBufferGeometry(500, 500, 500);
-				geometry.scale(-1, 1, 1);
-				
-				var material = new THREE.MeshBasicMaterial({
-					map: new THREE.TextureLoader().load('Image/star.jpg')
-					//color: 0xff0000
-				});
-				mesh = new THREE.Mesh(geometry, material);
-				mesh.name = "skybox";
-				scene.add(mesh);
-			
-				// ground
-//				var mesh = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), new THREE.MeshPhongMaterial({
-//					color: 0x999999,
-//					depthWrite: false
-//				}));
-//				mesh.rotation.x = -Math.PI / 2;
-//				mesh.receiveShadow = true;
-//				scene.add(mesh);
-
-				//添加网格
-				//				var grid = new THREE.GridHelper( 2000, 20, 0x000000, 0x000000 );
-				//				grid.material.opacity = 0.2;
-				//				grid.material.transparent = true;
-				//				scene.add( grid );
+				//加载UI
+				sceneHUD = new THREE.Scene();
+				cameraHUD = new THREE.OrthographicCamera(-width / 2, width / 2, height / 2, -height / 2, 1, 10);
+				cameraHUD.position.z = 10;
+				sceneHUD.add(cameraHUD);
+				var textureLoader = new THREE.TextureLoader();
+				var mapBGLoad = textureLoader.load("Image/BG/LoadBG.jpg", createLoadBG);
+				var mapA = textureLoader.load("Image/BG/bg.png", createHUDBG);
+				var mapSoundOn = textureLoader.load("Image/打开.png", createHUDSoundOn);
+				var mapSoundOff = textureLoader.load("Image/关闭.png", createHUDSoundOff);
+				var leftButton = textureLoader.load("Image/arrow/左箭头.png", createHUDLeftButton);
+				var rightButton = textureLoader.load("Image/arrow/右箭头.png", createHUDRightButton);
+				//skybox
+				setSkybox();
 
 				renderer = new THREE.WebGLRenderer();
 				renderer.setPixelRatio(window.devicePixelRatio);
 				renderer.setSize(window.innerWidth, window.innerHeight);
 				renderer.shadowMap.enabled = true;
 				container.appendChild(renderer.domElement);
+				document.body.appendChild(renderer.domElement);
+				renderer.autoClear = false;
 
 				window.addEventListener('resize', onWindowResize, false);
 
-				// stats
-				//性能插件stats实现性能监听实例详解
-				//stats = new Stats();
-				//container.appendChild(stats.dom);
+				renderer.domElement.onmousedown = onDocumentMouseDown;
+				manager.onProgress = function(item, loaded, total) {
+					loadProgress++;
+					//console.log("======manager.onProgress=============" + loadProgress)
+
+				};
+
+				onProgress = function(xhr) {
+
+					if(xhr.lengthComputable) {
+
+						var percentComplete = xhr.loaded / xhr.total * 100;
+						if(percentComplete == 100) {
+							loadModelCount++;
+							if(loadModelCount != loadPathList.length) {
+								Load(loadPathList[loadModelCount]);
+
+							}
+
+							if(loadModelCount == loadPathList.length) {
+								controls = new THREE.OrbitControls(camera);
+								controls.target.set(0, 0, 0);
+								controls.update();
+								action = models[0].mixer.clipAction(models[0].animations[0]);
+								createjs.Sound.registerSound('./music/HNY.mp3', '123');
+								createjs.Sound.on('fileload', function(event) {
+									//console.log('sound loaded');
+
+									soundinstance = createjs.Sound.play('123');
+									soundinstance.loop = true
+
+								}, this);
+							}
+						}
+					}
+
+				};
+
+				onError = function(xhr) {
+
+					console.error(xhr);
+
+				};
 
 				// model
-				//加载第一个模型
-				Load('CUBE/cube.fbx');
-				Load('maxiu/123.fbx');
-				Load('maxiu/MM.fbx');
+				//加载模型
+				//				for(var index = 0; index < loadPathList.length; index++) {
+				//					Load(loadPathList[index]);
+				//				}
+
+				Load(loadPathList[0]);
+
+			}
+
+			function createLoadBG(texture) {
+				//创建贴图的材质球
+				var material = new THREE.SpriteMaterial({
+					map: texture
+				});
+
+				var width = window.innerWidth;
+				var height = window.innerHeight;
+
+				loadBGSprite = new THREE.Sprite(material);
+				//贴图的中心点
+				loadBGSprite.center.set(0.0, 1.0);
+				//设置贴图的长宽,填充整个屏幕
+				loadBGSprite.scale.set(width, height, 1);
+				sceneHUD.add(loadBGSprite);
+				loadBGSprite.position.set(-width / 2, height / 2, 2); // top left
+			}
+
+			function createHUDLeftButton(texture) {
+				var material = new THREE.SpriteMaterial({
+					map: texture
+				});
+
+				leftSprite = new THREE.Sprite(material);
+				//贴图的中心点
+				leftSprite.scale.set(44, 26, 1);
+				leftSprite.name = "leftButton";
+				sceneHUD.add(leftSprite);
+				leftSprite.position.set(-width / 2 + 40, 0, 1); // top left	
+				leftSprite.visible = false;
+
+			}
+
+			function createHUDRightButton(texture) {
+				var material = new THREE.SpriteMaterial({
+					map: texture
+				});
+
+				rightSprite = new THREE.Sprite(material);
+				//贴图的中心点
+				rightSprite.scale.set(44, 26, 1);
+				rightSprite.name = "rightButton";
+				sceneHUD.add(rightSprite);
+				rightSprite.position.set(width / 2 - 40, 0, 1); // top left	
+				rightSprite.visible = false;
+
+			}
+
+			function createHUDSoundOn(texture) {
+				var material = new THREE.SpriteMaterial({
+					map: texture
+				});
+
+				soundOnSprite = new THREE.Sprite(material);
+				//贴图的中心点
+				soundOnSprite.scale.set(32, 32, 1);
+				soundOnSprite.name = "soundoff";
+				sceneHUD.add(soundOnSprite);
+				soundOnSprite.position.set(-width / 2 + 40, height / 2 - 40, 1); // top left
+				soundOnSprite.visible = false;
+
+			}
+
+			function createHUDSoundOff(texture) {
+				var material = new THREE.SpriteMaterial({
+					map: texture
+				});
+
+				soundOffSprite = new THREE.Sprite(material);
+				//贴图的中心点
+				soundOffSprite.scale.set(32, 32, 1);
+				soundOffSprite.name = "soundon";
+				sceneHUD.add(soundOffSprite);
+				soundOffSprite.position.set(-width / 2 + 40, height / 2 - 40, 1); // top left	
+				soundOffSprite.visible = false;
+			}
+
+			//创建背景图片
+			function createHUDBG(texture) {
+				//创建贴图的材质球
+				var material = new THREE.SpriteMaterial({
+					map: texture
+				});
+
+				var width = window.innerWidth;
+				var height = window.innerHeight;
+
+				spriteBG = new THREE.Sprite(material);
+				//贴图的中心点
+				spriteBG.center.set(0.0, 1.0);
+				//设置贴图的长宽,填充整个屏幕
+				spriteBG.scale.set(width, height, 1);
+				sceneHUD.add(spriteBG);
+				spriteBG.position.set(-width / 2, height / 2, 1); // top left
+
 			}
 
 			//天空球
 			function setSkybox() {
 
-				var cubeTextureLoader = new THREE.CubeTextureLoader();
-				//cubeTextureLoader.setPath( 'Image/skyboxsun25deg/' );
-				cubeTextureLoader.setPath( 'Image/new/' );
+				var geometry = new THREE.SphereBufferGeometry(200, 200, 200);
+				geometry.scale(-1, 1, 1);
 
-
-				cubeMap = cubeTextureLoader.load( [
-					'px.jpg', 'nx.jpg',
-					'py.jpg', 'ny.jpg',
-					'pz.jpg', 'nz.jpg',
-				] );
-
-				var cubeShader = THREE.ShaderLib[ 'cube' ];
-				cubeShader.uniforms[ 'tCube' ].value = cubeMap;
-
-				var skyBoxMaterial = new THREE.ShaderMaterial( {
-					fragmentShader: cubeShader.fragmentShader,
-					vertexShader: cubeShader.vertexShader,
-					uniforms: cubeShader.uniforms,
-					side: THREE.BackSide
-				} );
-
-				var skyBoxGeometry = new THREE.BoxBufferGeometry(
-					parameters.oceanSide * 5 + 100,
-					parameters.oceanSide * 5 + 100,
-					parameters.oceanSide * 5 + 100 );
-
-				var skyBox = new THREE.Mesh( skyBoxGeometry, skyBoxMaterial );
-
-				scene.add( skyBox );
+				var material = new THREE.MeshBasicMaterial({
+					map: new THREE.TextureLoader().load('Image/star.jpg')
+				});
+				mesh = new THREE.Mesh(geometry, material);
+				mesh.name = "skybox";
+				scene.add(mesh);
 
 			}
 
 			//FBX加载
 			function Load(path) {
-				loader.load(path, FBXModel);
+				loader.load(path, FBXModel, onProgress);
 			}
 
 			//加载场景模型
-			function LoadSceneModel(path){
+			function LoadSceneModel(path) {
 				loader.load(path, FBXSceneModel);
 			}
-			
+
 			//加载场景模型
-			function FBXSceneModel(object){
+			function FBXSceneModel(object) {
 				scene.add(object);
 			}
-			
+
 			//加载FBXModel
 			function FBXModel(object) {
 				//index表示加载的模型
 				models[index] = object;
 				//隐藏加载的模型
-				models[index].visible = false;
+				if(index == 0) {
+					models[index].visible = true;
+					activeModel = models[index];
+					//console.log("show-------");
+				} else {
+					models[index].visible = false;
+				}
+				models[index].position.y = -70;
+
 				scene.add(object);
 				AddAnimation(object, index);
 				index++;
@@ -297,62 +399,182 @@
 				mixers[animationNum] = new Array();
 				//将混合动画从尾部添加动画
 				mixers[animationNum].push(model.mixer);
-				//定义动画
-				//action= model.mixer.clipAction(model.animations[0]);
-				//
-				model.traverse(function(child) {
 
-					if(child.isMesh) {
-
-						child.castShadow = true;
-						child.receiveShadow = true;
-					}
-
-				});
 			}
 
-			function onWindowResize() {
+			//canSwitch为true时可以移动
+			function ToLeftModel() {
+				if(canSwitch) {
+					if(action != null) {
+						action.stop();
+					}
+					//摄像机视角回复
+					controls.reset();
+					selectModelID--;
+					if(selectModelID == -1) {
+						selectModelID = models.length - 1;
+					}
 
-				camera.aspect = window.innerWidth / window.innerHeight;
-				camera.updateProjectionMatrix();
-				
-				renderer.setSize(window.innerWidth, window.innerHeight);
+					moveleft = true;
+
+				}
+			}
+
+			//向右切换模型
+			function ToRightModel() {
+				if(canSwitch) {
+
+					if(action != null) {
+						action.stop();
+					}
+					controls.reset();
+					selectModelID++;
+					var i;
+					if(selectModelID == models.length) {
+						selectModelID = 0;
+					}
+					moveright = true;
+				}
+			}
+
+			//射线检测。点击的按钮
+			function onDocumentMouseDown(event) {
+				mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+				mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+				event.preventDefault();
+				// update the picking ray with the camera and mouse position
+				raycaster.setFromCamera(mouse, cameraHUD);
+
+				// calculate objects intersecting the picking ray
+				var intersects = raycaster.intersectObjects(sceneHUD.children, true);
+
+				for(var i = 0; i < intersects.length; i++) {
+					//console.log(intersects[ i ].object.name);					
+					if(intersects[i].object.name == "leftButton") {
+						ToLeftModel();
+					} else if(intersects[i].object.name == "rightButton") {
+						ToRightModel();
+					} else if(intersects[i].object.name == "soundoff") {
+						soundOnSprite.visible = false;
+						soundOffSprite.visible = true;
+						//sound.pause();
+						soundinstance.volume = 0;
+						//						createjs.Sound.pause('123');
+
+					} else if(intersects[i].object.name == "soundon") {
+						soundOnSprite.visible = true;
+						soundOffSprite.visible = false;
+						//						createjs.Sound.play('123');
+
+						//sound.play();
+						//						soundinstance.resume();
+						soundinstance.volume = 1;
+
+					}
+				}
+
 			}
 
 			//替换模型
-			function SwitchModel(modelNum) {
+			function ShowCurrentModel(selectmodelNum) {
+
 				//如果有模型显示中，先隐藏当前的模型		
 				if(activeModel != null) {
 					activeModel.visible = false;
 				}
 				//显示当前选中的模型
-				models[modelNum].visible = true;
+				models[selectmodelNum].visible = true;
 				//显示模型为当先选中的模型
-				activeModel = models[modelNum];
-				//选中模型的下标为当前模型的下标
-				selectModelID = modelNum;
-				//console.log("modelNum="+modelNum);
+				activeModel = models[selectmodelNum];
+				//切换当前模型的动画
+				ClipAnimation(selectmodelNum, 0);
+				activeModel.position.x = 0;
+				//camera.rotation = startCameraRotation;
 			}
 
 			//切换选中模型的动画
 			function ClipAnimation(modelID, i) {
 				//假设已经有动画在播放，停止该动画
-				if(action != null) {
-					action.stop();
-				}
+
+				//console.log("modelength--->"+models[modelID].animations.length);
+				var aniID;
+				aniID = models[modelID].animations.length
 				//选择当前需要播放的动画
-				action = models[modelID].mixer.clipAction(models[modelID].animations[i]);
+				action = models[modelID].mixer.clipAction(models[modelID].animations[0]);
 				//播放选择的动画
 				action.play();
 				//正在播放动画
 				isAction = true;
 			}
 
+			function LoadingModel() {
+				if(isLoading) {
+					var percentComplete = loadProgress / totalLoad * 100;
+					//console.log( Math.round( percentComplete, 2 ) + '% downloaded' );
+					if(percentComplete < 18) {
+						//console.log(startProgress);
+						startProgress++;
+						console.log(startProgress);
+						$("#show").html(startProgress);
+					}
+					if(percentComplete < 100) {
+						$("#show").html(Math.round(percentComplete, 2) + '%');
+					} else {
+						isLoading = true;
+						$("#show").hide();
+						loadBGSprite.visible = false;
+						leftSprite.visible = true;
+						rightSprite.visible = true
+						soundOnSprite.visible = true;
+
+						action.play();
+					}
+
+				}
+			}
+
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+				cameraHUD.left = -width / 2;
+				cameraHUD.right = width / 2;
+				cameraHUD.top = height / 2;
+				cameraHUD.bottom = -height / 2;
+				cameraHUD.updateProjectionMatrix();
+				renderer.setSize(window.innerWidth, window.innerHeight);
+			}
+
 			function animate() {
 
 				requestAnimationFrame(animate);
+				//正在加载中
+				LoadingModel();
+
+				if(moveleft) {
+					activeModel.position.x -= 10;
+					canSwitch = false;
+					if(activeModel.position.x < -300) {
+						moveleft = false;
+						activeModel.position.x = 0;
+						ShowCurrentModel(selectModelID);
+						canSwitch = true;
+					}
+				}
+
+				if(moveright) {
+					activeModel.position.x += 10;
+					if(activeModel.position.x > 300) {
+						activeModel.position.x = 0;
+
+						moveright = false;
+						ShowCurrentModel(selectModelID);
+					}
+				}
+
 				//当有动画需要被播放，就逐帧播放该动画
 				if(action != null) {
+					//console.log("length"+mixers[selectModelID].length);
 					if(mixers[selectModelID].length > 0) {
 						for(var i = 0; i < mixers[selectModelID].length; i++) {
 							models[selectModelID].mixer.update(clock.getDelta());
@@ -360,10 +582,11 @@
 
 					}
 				}
+		
+				renderer.clear();
 				renderer.render(scene, camera);
-
-				//stats.update();
-
+				renderer.clearDepth();
+				renderer.render(sceneHUD, cameraHUD);
 			}
 		</script>
 
